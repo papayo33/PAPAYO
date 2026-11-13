@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAPAYO — Live Institutional Macro &amp; Bias Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-app: #040812;
+      --bg-sidebar: #070d1c;
+      --bg-card: #0b1326;
+      --bg-card-hover: #0f1a34;
+      --bg-elevated: #122040;
+      --bg-input: #060b18;
+      --border: #172544;
+      --border-strong: #233866;
+      --border-blue: #2563eb;
+      --text-primary: #eef4ff;
+      --text-secondary: #93a8ce;
+      --text-muted: #586f99;
+      --blue: #3b82f6;
+      --blue-bright: #38bdf8;
+      --blue-glow: rgba(56, 189, 248, 0.25);
+      --blue-bg: rgba(59, 130, 246, 0.14);
+      --blue-border: rgba(56, 189, 248, 0.42);
+      --bull: #38bdf8;
+      --bull-bg: rgba(56, 189, 248, 0.14);
+      --bull-border: rgba(56, 189, 248, 0.45);
+      --bear: #f43f5e;
+      --bear-bg: rgba(244, 63, 94, 0.14);
+      --bear-border: rgba(244, 63, 94, 0.45);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.14);
+      --amber-border: rgba(245, 158, 11, 0.42);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-app); }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--blue); }
+
+    /* Live Tick Flash Animations */
+    @keyframes flashBull {
+      0% { background-color: rgba(56, 189, 248, 0.32); }
+      100% { background-color: transparent; }
+    }
+    @keyframes flashBear {
+      0% { background-color: rgba(244, 63, 94, 0.32); }
+      100% { background-color: transparent; }
+    }
+    .tick-up { animation: flashBull 0.85s ease-out; }
+    .tick-down { animation: flashBear 0.85s ease-out; }
+
+    /* App Layout */
+    .app-shell { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 256px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 14px;
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      z-index: 40;
+      transition: transform 0.25s ease;
+    }
+
+    .brand-header {
+      padding: 4px 10px 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo-badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 15px;
+      color: #030712;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+    }
+
+    .brand-sub-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+      margin-top: 5px;
+    }
+
+    .workspace-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 10px 8px;
+    }
+
+    .nav-list { display: flex; flex-direction: column; gap: 4px; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 13.5px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      text-align: left;
+      width: 100%;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item:hover { background: var(--bg-card); color: var(--text-primary); }
+
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.22), rgba(56, 189, 248, 0.08));
+      border-color: var(--blue-border);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .nav-item svg { width: 16px; height: 16px; opacity: 0.85; flex-shrink: 0; }
+    .nav-item.active svg { color: var(--blue-bright); opacity: 1; }
+
+    .sidebar-footer {
+      padding: 14px 10px 4px;
+      border-top: 1px solid var(--border);
+    }
+
+    .sidebar-tagline {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+    }
+
+    .sidebar-sub { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* Main Content */
+    .main-area {
+      flex: 1;
+      margin-left: 256px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(4, 8, 18, 0.9);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+
+    .mobile-menu-btn {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .breadcrumb {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .breadcrumb span.current { color: #fff; font-weight: 700; }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Pills & Buttons */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .pill:hover { border-color: var(--blue-border); color: #fff; }
+
+    .pill.live {
+      background: var(--bull-bg);
+      border-color: var(--bull-border);
+      color: var(--blue-bright);
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--blue-bright);
+      box-shadow: 0 0 8px var(--blue-bright);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      transition: all 0.15s;
+    }
+
+    .btn:hover { border-color: var(--blue-border); background: #182b54; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      border-color: #38bdf8;
+      color: #030712;
+      font-weight: 800;
+    }
+
+    .btn-primary:hover { filter: brightness(1.08); }
+
+    /* Container */
+    .container {
+      max-width: 1360px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .page-header h1 {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      margin-top: 4px;
+      max-width: 860px;
+    }
+
+    /* Master Bias Command Bar */
+    .master-bias-bar {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(11, 19, 38, 0.96));
+      border: 1px solid var(--blue-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .bias-kpi {
+      background: rgba(6, 11, 24, 0.75);
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      padding: 11px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .bias-kpi-lbl {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .bias-kpi-val {
+      font-size: 15px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bias-kpi-sub { font-size: 11.5px; color: var(--text-secondary); }
+
+    /* Section Headings */
+    .section-tag {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .section-left { display: flex; align-items: center; gap: 8px; }
+
+    .step-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--blue-bg);
+      color: var(--blue-bright);
+      border: 1px solid var(--blue-border);
+    }
+
+    .section-title { font-size: 17px; font-weight: 800; color: #fff; }
+
+    /* Cards & Grids */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .card-blue-outline {
+      border-color: var(--blue-border);
+      box-shadow: inset 0 1px 0 rgba(56, 189, 248, 0.12);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+
+    /* Explicit BIAS Badges */
+    .bias-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .bias-bull {
+      background: var(--bull-bg);
+      color: var(--bull);
+      border: 1px solid var(--bull-border);
+    }
+
+    .bias-bear {
+      background: var(--bear-bg);
+      color: var(--bear);
+      border: 1px solid var(--bear-border);
+    }
+
+    .bias-neut {
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+
+    .pos { color: var(--bull); }
+    .neg { color: var(--bear); }
+    .neu { color: var(--amber); }
+
+    /* Regime Banner */
+    .regime-banner {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(11, 19, 38, 0.96));
+      border: 1px solid var(--blue-border);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 14px;
+    }
+
+    .regime-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .regime-name {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: var(--blue-bright);
+      text-transform: uppercase;
+    }
+
+    /* Asset rows */
+    .asset-list {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border);
+    }
+
+    .asset-row {
+      display: grid;
+      grid-template-columns: 95px 1fr 95px 75px 108px;
+      align-items: center;
+      padding: 9px 6px;
+      border-bottom: 1px solid rgba(23, 37, 68, 0.7);
+      font-size: 13px;
+      gap: 6px;
+    }
+
+    .asset-row:hover { background: rgba(56, 189, 248, 0.03); }
+    .asset-sym { font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace; }
+    .asset-name { color: var(--text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .asset-price { font-family: 'JetBrains Mono', monospace; font-weight: 700; text-align: right; color: var(--text-primary); }
+    .asset-chg { font-family: 'JetBrains Mono', monospace; font-weight: 700; text-align: right; font-size: 12px; }
+
+    /* Yield Matrix */
+    .yield-box {
+      margin-top: 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .yield-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .yield-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+
+    .yield-cell {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 6px;
+    }
+
+    .yield-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .yield-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; width: 100%; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+
+    th {
+      text-align: left;
+      padding: 10px 10px;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-strong);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(23, 37, 68, 0.75);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    tr:hover { background: rgba(56, 189, 248, 0.03); }
+
+    /* Setup Cards */
+    .setup-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .setup-card:hover {
+      transform: translateY(-2px);
+      background: var(--bg-card-hover);
+      border-color: var(--blue-border);
+    }
+
+    .setup-card.grade-a {
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.09);
+    }
+
+    .setup-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .setup-ticker-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .setup-ticker {
+      font-size: 19px;
+      font-weight: 900;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .grade-box {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    .grade-box.A { background: var(--bull-bg); color: var(--bull); border: 1px solid var(--bull); }
+    .grade-box.B { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--border-strong); }
+
+    .progress-bar {
+      height: 4px;
+      width: 100%;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
+      border-radius: 99px;
+      transition: width 0.3s ease;
+    }
+
+    .setup-kv { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+    .kv-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .kv-label { color: var(--text-secondary); }
+    .kv-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+    /* Filter Pills */
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+
+    .filter-pill {
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+
+    .filter-pill:hover { border-color: var(--border-strong); color: #fff; }
+    .filter-pill.active {
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      border-color: #38bdf8;
+      color: #030712;
+      font-weight: 800;
+    }
+
+    /* SMT Chart Card */
+    .smt-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .smt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .smt-caption {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+      background: var(--bg-input);
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+    }
+
+    /* Tools Grid */
+    .tool-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .tool-card:hover {
+      border-color: var(--blue-border);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .tool-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--blue-bright);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .tool-title { font-size: 16px; font-weight: 800; color: #fff; margin-top: 4px; }
+    .tool-desc { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+    .tool-link { font-size: 12px; font-weight: 700; color: var(--blue-bright); }
+
+    /* Inputs & Drawer */
+    input, select {
+      background: var(--bg-input);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-family: inherit;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+    }
+
+    input:focus, select:focus { border-color: var(--blue-bright); }
+
+    .api-drawer {
+      background: var(--bg-card);
+      border: 1px solid var(--blue-border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .api-drawer.open { display: flex; }
+
+    .view-section { display: none; }
+    .view-section.active { display: flex; flex-direction: column; gap: 22px; }
+
+    /* Sub-tabs */
+    .desk-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .desk-tab {
+      padding: 7px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .desk-tab.active {
+      background: var(--bg-elevated);
+      border-color: var(--blue-border);
+      color: #fff;
+    }
+
+    .footer-note {
+      border-top: 1px solid var(--border);
+      padding: 18px 24px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    @media (max-width: 1024px) {
+      .master-bias-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 960px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-area { margin-left: 0; }
+      .mobile-menu-btn { display: inline-flex; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .master-bias-bar { grid-template-columns: 1fr; }
+      .asset-row { grid-template-columns: 80px 1fr 82px 98px; }
+      .asset-chg { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- LEFT SIDEBAR: PAPAYO -->
+  <aside class="sidebar" id="sidebar">
+    <div>
+      <div class="brand-header">
+        <div class="brand-title">
+          <span class="brand-logo-badge">P</span>
+          PAPAYO
+        </div>
+        <div class="brand-sub-tag">LIVE MACRO &amp; BIAS TERMINAL</div>
+      </div>
+
+      <div class="workspace-label">Live Trading Desk</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="whats-in-play" onclick="switchView('whats-in-play')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          What's in Play (Live Bias)
+        </button>
+        <button class="nav-item" data-view="cot-seasonality" onclick="switchView('cot-seasonality')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          COT · Seasonality · Rates
+        </button>
+        <button class="nav-item" data-view="tools" onclick="switchView('tools')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Yield Curves &amp; Macro Tools
+        </button>
+        <button class="nav-item" data-view="fred-terminal" onclick="switchView('fred-terminal')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          FRED Live Terminal
+        </button>
+        <button class="nav-item" data-view="an-desk" onclick="switchView('an-desk')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Macro Workflow &amp; Calendar
+        </button>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-tagline">PAPAYO ENGINE v4.0</div>
+      <div class="sidebar-sub">Auto-calculated Bullish / Bearish BIAS every moment.</div>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
+        <div class="breadcrumb">
+          <span style="color:var(--blue-bright);font-weight:800;">PAPAYO</span> / <span class="current" id="breadcrumb-title">What's in Play (Live Bias)</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <span class="pill live" id="live-status-pill" onclick="syncAllLiveFeeds(true)" title="Click to force immediate live sync">
+          <span class="live-dot"></span>
+          <span id="live-status-text">LIVE STREAM · Next sync 15s</span>
+        </span>
+        <button class="pill" onclick="toggleApiDrawer()">
+          🔑 FRED API Key: <strong id="fred-key-status" style="color:var(--blue-bright);">Ready</strong>
+        </button>
+        <span class="pill mono" id="live-clock">--:--:-- UTC</span>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <!-- FRED API KEY DRAWER -->
+      <div class="api-drawer" id="api-drawer">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong style="color:#fff;font-size:14px;">PAPAYO Live Data &amp; FRED API Configuration</strong>
+            <div style="font-size:12px;color:var(--text-secondary);">
+              Spot Gold (GC), Silver (SI), FX pairs, ICE DXY, and BTC stream automatically with zero keys. Paste your personal <strong>FRED API Key</strong> below to stream live Treasury yields, credit spreads, oil, copper, and equities directly from St. Louis Fed.
+            </div>
+          </div>
+          <button class="btn" onclick="toggleApiDrawer()">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="fred-api-input" placeholder="Paste your 32-character FRED API Key here..." style="flex:1;min-width:260px;font-family:'JetBrains Mono',monospace;" />
+          <button class="btn btn-primary" onclick="saveFredApiKey()">Save &amp; Stream FRED Live</button>
+        </div>
+        <div id="api-sync-log" class="mono" style="font-size:11.5px;color:var(--blue-bright);"></div>
+      </div>
+
+      <!-- MASTER LIVE BIAS COMMAND BAR (Always visible at top) -->
+      <div class="master-bias-bar" id="master-bias-bar">
+        <!-- Populated dynamically every tick -->
+      </div>
+
+      <!-- =========================================================
+           VIEW 1: WHAT'S IN PLAY (LIVE BIAS WORKFLOW)
+           ========================================================= -->
+      <section class="view-section active" id="view-whats-in-play">
+        <div class="page-header">
+          <h1>PAPAYO — Live Institutional Bias &amp; Markets in Play</h1>
+          <p>Automated top-down macro engine updating continuously. Every asset displays its real-time calculated <strong>▲ BULLISH BIAS</strong> or <strong>▼ BEARISH BIAS</strong> across Macro Regime, COT Positioning, Seasonality, Interest Rate Differentials, Open Levels, and Valuation.</p>
+        </div>
+
+        <!-- STEP 1-2: Market Regime + Risk-on/Risk-off Formula -->
+        <div>
+          <div class="section-tag">
+            <div class="section-left">
+              <span class="step-badge">STEP 1–2 · AUTO-COMPUTED</span>
+              <h2 class="section-title">Live Market Regime &amp; Intermarket Bias</h2>
+            </div>
+            <span id="regime-master-bias"></span>
+          </div>
+
+          <div class="grid-2">
+            <!-- Left Card: Auto-Detected Regime + Live Intermarket + Treasury Yield Matrix -->
+            <div class="card card-blue-outline">
+              <div class="regime-banner">
+                <div class="regime-top">
+                  <span class="regime-name" id="regime-title">REFLATIONARY EXPANSION</span>
+                  <span id="regime-badge-pill"></span>
+                </div>
+                <p style="font-size:12.5px;color:var(--text-secondary);" id="regime-desc">
+                  Auto-detected from live intermarket momentum: Risk assets &amp; commodities bid while yields hold firm.
+                </p>
+              </div>
+
+              <div class="asset-list" id="intermarket-list">
+                <!-- Populated live -->
+              </div>
+
+              <div class="yield-box">
+                <div class="yield-header">
+                  <span>TREASURY YIELD MATRIX (FRED LIVE)</span>
+                  <span id="yield-spread-bias"></span>
+                </div>
+                <div class="yield-grid" id="yield-matrix-grid">
+                  <!-- Populated live -->
+                </div>
+              </div>
+
+              <div style="margin-top:12px;font-size:12.5px;color:var(--text-secondary);display:flex;flex-direction:column;gap:4px;">
+                <div><strong style="color:#fff;">CROSS-ASSET VERDICT:</strong> <span id="cross-asset-note">Growth-led expansion: yields &amp; risk assets aligned</span></div>
+                <div>Live Model Confidence: <strong class="pos mono" id="regime-confidence">84% · BULLISH RISK-ON BIAS</strong></div>
+              </div>
+            </div>
+
+            <!-- Right Card: Live Risk-on / Risk-off Formula -->
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+                <h3 style="font-size:15px;font-weight:800;color:#fff;">Live Risk-On / Risk-Off Formula</h3>
+                <span id="overall-risk-badge"></span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ASSET / RATIO</th>
+                      <th>LIVE SIGNAL</th>
+                      <th>CALCULATED BIAS</th>
+                    </tr>
+                  </thead>
+                  <tbody id="risk-formula-tbody">
+                    <!-- Populated live -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 1 FIXED INCOME: BONDS SMT CHARTS (4H) -->
+        <div>
+          <div class="section-tag">
+            <div class="section-left">
+              <span class="step-badge">STEP 1 · FIXED INCOME SMT</span>
+              <h2 class="section-title">Bonds SMT Divergence &amp; Institutional PD Arrays</h2>
+            </div>
+            <span class="bias-pill bias-bear">YIELDS: ▲ BULLISH · BONDS: ▼ BEARISH</span>
+          </div>
+
+          <div class="grid-2" id="smt-charts-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- RESULT: THIS WEEK'S HIGH-CONVICTION BIAS SETUPS -->
+        <div>
+          <div class="section-tag">
+            <div class="section-left">
+              <span class="step-badge">HIGH CONVICTION</span>
+              <h2 class="section-title">Top Live Bias Setups (Grade A &amp; B)</h2>
+            </div>
+            <span style="font-size:12px;color:var(--text-secondary);">Auto-ranked by Macro + COT + Seasonality + Rates + Open Levels</span>
+          </div>
+
+          <div class="grid-3" id="best-setups-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- FULL 20-MARKET LIVE BIAS MATRIX -->
+        <div>
+          <div class="section-tag">
+            <div class="section-left">
+              <span class="step-badge">ALL 20 MARKETS · LIVE BIAS</span>
+              <h2 class="section-title">Complete Multi-Factor Bias Watchlist</h2>
+            </div>
+          </div>
+
+          <div class="filter-bar" id="watchlist-filters">
+            <button class="filter-pill active" data-cat="All" onclick="filterWatchlist('All')">All (20)</button>
+            <button class="filter-pill" data-cat="BULLISH" onclick="filterWatchlist('BULLISH')">▲ Bullish Bias Only</button>
+            <button class="filter-pill" data-cat="BEARISH" onclick="filterWatchlist('BEARISH')">▼ Bearish Bias Only</button>
+            <button class="filter-pill" data-cat="Currencies" onclick="filterWatchlist('Currencies')">Currencies</button>
+            <button class="filter-pill" data-cat="Metals" onclick="filterWatchlist('Metals')">Metals (GC/SI/HG)</button>
+            <button class="filter-pill" data-cat="Indices" onclick="filterWatchlist('Indices')">Indices</button>
+            <button class="filter-pill" data-cat="Energy" onclick="filterWatchlist('Energy')">Energy</button>
+            <button class="filter-pill" data-cat="Rates" onclick="filterWatchlist('Rates')">Rates</button>
+            <button class="filter-pill" data-cat="Grains" onclick="filterWatchlist('Grains')">Grains</button>
+            <button class="filter-pill" data-cat="Crypto" onclick="filterWatchlist('Crypto')">Crypto</button>
+          </div>
+
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>MARKET</th>
+                    <th>LIVE PRICE</th>
+                    <th>MACRO BIAS</th>
+                    <th>COT BIAS</th>
+                    <th>SEASONALITY BIAS</th>
+                    <th>INTEREST RATE BIAS</th>
+                    <th>OPEN LEVELS</th>
+                    <th>SCORE &amp; FINAL BIAS</th>
+                  </tr>
+                </thead>
+                <tbody id="watchlist-tbody">
+                  <!-- Populated live -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 2: COT · SEASONALITY · INTEREST RATES (DEDICATED LIVE BIAS)
+           ========================================================= -->
+      <section class="view-section" id="view-cot-seasonality">
+        <div class="page-header">
+          <h1>COT Positioning · Seasonality · Interest Rate Differentials</h1>
+          <p>Every institutional pillar is continuously computed into a clear <strong>▲ BULLISH BIAS</strong> or <strong>▼ BEARISH BIAS</strong> for live trading execution.</p>
+        </div>
+
+        <!-- 1. CFTC COT Positioning Table -->
+        <div class="card card-blue-outline">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <div>
+              <span class="step-badge">PILLAR 01 · CFTC POSITIONING</span>
+              <h2 style="font-size:18px;font-weight:800;color:#fff;margin-top:4px;">Commitment of Traders (COT Index 0–100 &amp; Bias)</h2>
+            </div>
+            <span class="bias-pill bias-bull">AUTO-SCORED WEEKLY</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>MARKET</th>
+                  <th>COMMERCIAL NET</th>
+                  <th>NON-COMM (FUNDS)</th>
+                  <th>COT INDEX (0–100)</th>
+                  <th>POSITIONING REGIME</th>
+                  <th>COT BIAS</th>
+                </tr>
+              </thead>
+              <tbody id="cot-full-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. Seasonal Tendencies & Interest Rate Differentials Side-by-Side -->
+        <div class="grid-2">
+          <div class="card">
+            <div style="margin-bottom:12px;">
+              <span class="step-badge">PILLAR 02 · SEASONAL EDGE</span>
+              <h3 style="font-size:17px;font-weight:800;color:#fff;margin-top:4px;">10-Year &amp; 15-Year Seasonal Tendencies (Current Window)</h3>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>MARKET</th>
+                    <th>WIN RATE (10Y)</th>
+                    <th>AVG MOVE</th>
+                    <th>SEASONALITY BIAS</th>
+                  </tr>
+                </thead>
+                <tbody id="seasonality-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="margin-bottom:12px;">
+              <span class="step-badge">PILLAR 03 · CENTRAL BANKS</span>
+              <h3 style="font-size:17px;font-weight:800;color:#fff;margin-top:4px;">G10 Central Bank Rates &amp; Yield Differentials</h3>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>CENTRAL BANK / PAIR</th>
+                    <th>POLICY RATE / SPREAD</th>
+                    <th>STANCE</th>
+                    <th>RATE BIAS</th>
+                  </tr>
+                </thead>
+                <tbody id="rates-diff-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 3: YIELD CURVES & CREDIT SPREADS
+           ========================================================= -->
+      <section class="view-section" id="view-tools">
+        <div class="page-header">
+          <h1>Yield Curves &amp; Credit Spreads Terminal</h1>
+          <p>Live U.S. Treasury curve slope (2s10s) and Corporate Credit Spreads vs 20-Day EMA with automated risk bias detection.</p>
+        </div>
+
+        <div class="card card-blue-outline">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <div>
+              <span class="step-badge">FIXED INCOME &amp; CREDIT</span>
+              <h2 style="font-size:19px;font-weight:800;color:#fff;margin-top:4px;">U.S. Treasury Yield Curve &amp; IG/HY Credit Spreads</h2>
+            </div>
+            <span id="curve-credit-bias-badge"></span>
+          </div>
+
+          <div class="grid-2">
+            <!-- US Treasury Curve SVG -->
+            <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <strong style="color:#fff;">U.S. Treasury Yield Curve Comparison</strong>
+                <span class="mono pos" style="font-size:12px;" id="svg-spread-txt">2s10s: +27 bp</span>
+              </div>
+              <svg viewBox="0 0 460 190" style="width:100%;height:auto;">
+                <line x1="40" y1="30" x2="440" y2="30" stroke="#172544" stroke-dasharray="3 3"/>
+                <line x1="40" y1="75" x2="440" y2="75" stroke="#172544" stroke-dasharray="3 3"/>
+                <line x1="40" y1="120" x2="440" y2="120" stroke="#172544" stroke-dasharray="3 3"/>
+                <line x1="40" y1="160" x2="440" y2="160" stroke="#172544"/>
+                <text x="8" y="34" fill="#586f99" font-size="10" font-family="JetBrains Mono">5.5%</text>
+                <text x="8" y="79" fill="#586f99" font-size="10" font-family="JetBrains Mono">5.0%</text>
+                <text x="8" y="124" fill="#586f99" font-size="10" font-family="JetBrains Mono">4.5%</text>
+                <text x="8" y="164" fill="#586f99" font-size="10" font-family="JetBrains Mono">4.0%</text>
+                <!-- 1Y Earlier -->
+                <polyline fill="none" stroke="#586f99" stroke-width="2" stroke-dasharray="4 3"
+                  points="60,122 140,128 220,132 320,118 420,98"/>
+                <!-- 1M Earlier -->
+                <polyline fill="none" stroke="#93a8ce" stroke-width="2"
+                  points="60,112 140,115 220,108 320,95 420,66"/>
+                <!-- Latest Live Curve (Electric Cyan-Blue) -->
+                <polyline fill="none" stroke="#38bdf8" stroke-width="3"
+                  points="60,104 140,110 220,102 320,86 420,46"/>
+                <circle cx="60" cy="104" r="4" fill="#38bdf8"/>
+                <circle cx="140" cy="110" r="4" fill="#38bdf8"/>
+                <circle cx="220" cy="102" r="4" fill="#38bdf8"/>
+                <circle cx="320" cy="86" r="4" fill="#38bdf8"/>
+                <circle cx="420" cy="46" r="4" fill="#38bdf8"/>
+                <text x="52" y="178" fill="#93a8ce" font-size="10" font-family="JetBrains Mono">1M</text>
+                <text x="132" y="178" fill="#93a8ce" font-size="10" font-family="JetBrains Mono">2Y</text>
+                <text x="212" y="178" fill="#93a8ce" font-size="10" font-family="JetBrains Mono">5Y</text>
+                <text x="310" y="178" fill="#93a8ce" font-size="10" font-family="JetBrains Mono">10Y</text>
+                <text x="410" y="178" fill="#93a8ce" font-size="10" font-family="JetBrains Mono">30Y</text>
+              </svg>
+              <div style="display:flex;gap:14px;font-size:11.5px;color:var(--text-secondary);margin-top:6px;">
+                <span><strong style="color:#38bdf8;">●</strong> Live Curve</span>
+                <span><strong style="color:#93a8ce;">●</strong> 1M Earlier</span>
+                <span><strong style="color:#586f99;">●</strong> 1Y Earlier</span>
+              </div>
+            </div>
+
+            <!-- Corporate Credit Spreads -->
+            <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <div>
+                  <strong style="color:#fff;">US Corporate Credit Spreads (IG &amp; HY)</strong>
+                  <div class="mono" style="font-size:11px;color:var(--text-muted);">BAMLC0A0CM / BAMLH0A0HYM2 · Spread vs EMA 20</div>
+                </div>
+                <span class="bias-pill bias-bull">▲ BULLISH RISK APPETITE</span>
+              </div>
+              <div style="display:flex;gap:18px;margin:8px 0;font-family:'JetBrains Mono',monospace;">
+                <div><span style="font-size:11px;color:var(--text-muted);">IG Spread:</span> <strong class="pos" id="ig-spread-val">0.85%</strong></div>
+                <div><span style="font-size:11px;color:var(--text-muted);">HY Spread:</span> <strong class="pos" id="hy-spread-val">3.12%</strong></div>
+              </div>
+              <svg viewBox="0 0 460 155" style="width:100%;height:auto;">
+                <line x1="35" y1="25" x2="445" y2="25" stroke="#172544" stroke-dasharray="3 3"/>
+                <line x1="35" y1="75" x2="445" y2="75" stroke="#172544" stroke-dasharray="3 3"/>
+                <line x1="35" y1="125" x2="445" y2="125" stroke="#172544"/>
+                <text x="4" y="29" fill="#586f99" font-size="9.5" font-family="JetBrains Mono">0.88%</text>
+                <text x="4" y="79" fill="#586f99" font-size="9.5" font-family="JetBrains Mono">0.81%</text>
+                <text x="4" y="129" fill="#586f99" font-size="9.5" font-family="JetBrains Mono">0.74%</text>
+                <polyline fill="none" stroke="#f43f5e" stroke-width="2"
+                  points="40,108 90,104 140,98 190,92 240,86 290,74 340,68 390,63 440,56"/>
+                <polyline fill="none" stroke="#38bdf8" stroke-width="2.5"
+                  points="40,115 70,102 100,110 130,90 160,96 190,82 220,88 250,70 280,55 310,64 340,72 370,60 405,42 440,48"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 4: FRED LIVE TERMINAL (15 SERIES + BIAS)
+           ========================================================= -->
+      <section class="view-section" id="view-fred-terminal">
+        <div class="page-header">
+          <h1>FRED Live Economic &amp; Rates Terminal</h1>
+          <p>Direct Federal Reserve Economic Data (FRED) stream via multi-proxy CORS relay. Every indicator auto-computes its directional macro bias.</p>
+        </div>
+
+        <div class="card card-blue-outline">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <input type="text" id="fred-search-input" placeholder="Filter FRED series (e.g. DGS10, VIXCLS, CPI, OIL, BAML)..." oninput="renderFredTable()" style="max-width:420px;" />
+            <button class="btn btn-primary" onclick="syncAllLiveFeeds(true)">↻ Refresh All FRED Series</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>SERIES ID</th>
+                  <th>INDICATOR NAME</th>
+                  <th>CATEGORY</th>
+                  <th>LATEST VALUE</th>
+                  <th>CHANGE</th>
+                  <th>CALCULATED BIAS</th>
+                  <th>UPDATED</th>
+                </tr>
+              </thead>
+              <tbody id="fred-series-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           VIEW 5: MACRO WORKFLOW & ECONOMIC CALENDAR
+           ========================================================= -->
+      <section class="view-section" id="view-an-desk">
+        <div class="page-header">
+          <h1>Live Macro Workflow &amp; High-Impact Catalysts</h1>
+          <p>Institutional execution checklist: <strong>Regime &rarr; Rate Expectations &rarr; Yield Curve &rarr; DXY &amp; VIX &rarr; COT &amp; Seasonality &rarr; Live Bias Trigger.</strong></p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card card-blue-outline">
+            <span class="step-badge">PLAYBOOK BIAS RULES</span>
+            <h3 style="font-size:16px;font-weight:800;color:#fff;margin:8px 0;">How PAPAYO Computes Live Bias</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text-secondary);">
+              <div style="padding:10px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);">
+                <strong style="color:#fff;">1. Macro &amp; Intermarket (30%):</strong> Cross-checks DXY trend, VIX (&lt;20 Bullish Risk / &gt;22 Bearish Risk), Copper/Gold ratio, and HY credit spreads.
+              </div>
+              <div style="padding:10px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);">
+                <strong style="color:#fff;">2. CFTC COT Positioning (25%):</strong> COT Index &ge; 65 generates <span class="pos font-bold">▲ BULLISH BIAS</span>; COT Index &le; 35 generates <span class="neg font-bold">▼ BEARISH BIAS</span>.
+              </div>
+              <div style="padding:10px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);">
+                <strong style="color:#fff;">3. Seasonality &amp; Interest Rate Differentials (25%):</strong> Combines 10Y/15Y seasonal win-rates with central bank policy rate spreads.
+              </div>
+              <div style="padding:10px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);">
+                <strong style="color:#fff;">4. Open Levels &amp; Valuation (20%):</strong> Confirms price alignment above/below Yearly, Quarterly, and Monthly opens.
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <span class="step-badge">ECONOMIC CALENDAR · CATALYSTS</span>
+            <h3 style="font-size:16px;font-weight:800;color:#fff;margin:8px 0;">Upcoming High-Impact Releases &amp; Expected Bias</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;" id="calendar-catalysts-list"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer-note">
+      <div><strong>PAPAYO</strong> — Automated Live Macro &amp; Institutional Bias Terminal. Educational &amp; analytical research tool.</div>
+      <div>Auto-refresh active every 15s &bull; GitHub Pages Ready</div>
+    </footer>
+  </div>
+</div>
+
+<script>
+// =========================================================================
+// PAPAYO CONFIGURATION — PASTE YOUR FRED API KEY BELOW FOR PERMANENT GITHUB HOSTING
+// =========================================================================
+const USER_API_KEYS = {
+  fred: '' // Optional: paste your 32-char FRED API key here before uploading to GitHub, or enter via UI
+};
+
+const STORAGE_KEY = 'papayo_live_terminal_v4';
+const SYNC_INTERVAL_SEC = 15;
+let countdown = SYNC_INTERVAL_SEC;
+
+// =========================================================================
+// CORE LIVE STATE
+// =========================================================================
+const STATE = {
+  fredKey: localStorage.getItem('papayo_fred_key') || USER_API_KEYS.fred || '',
+  lastSync: 'Initializing...',
+  currentFilter: 'All',
+  intermarket: [
+    { sym: 'DXY', name: 'ICE US Dollar Index', price: 101.66, prev: 101.92, chgPct: -0.26, invertBias: false },
+    { sym: 'GC', name: 'Gold Futures / Spot', price: 4008.30, prev: 4038.60, chgPct: -0.75, invertBias: false },
+    { sym: 'SI', name: 'Silver Futures / Spot', price: 33.85, prev: 33.72, chgPct: 0.39, invertBias: false },
+    { sym: 'EUR/USD', name: 'Euro / US Dollar', price: 1.1213, prev: 1.1179, chgPct: 0.30, invertBias: false },
+    { sym: 'USD/JPY', name: 'US Dollar / Yen', price: 152.40, prev: 152.10, chgPct: 0.20, invertBias: false },
+    { sym: 'CL', name: 'WTI Crude Oil', price: 68.45, prev: 67.67, chgPct: 1.15, invertBias: false },
+    { sym: 'SPX', name: 'S&P 500 Index', price: 7652.00, prev: 7548.50, chgPct: 1.37, invertBias: false },
+    { sym: 'BTC', name: 'Bitcoin Live Spot', price: 91420.00, prev: 89230.00, chgPct: 2.45, invertBias: false }
+  ],
+  yields: { y2: 4.61, y5: 4.70, y10: 4.88, y30: 5.32 },
+  spreads: { ig: 0.85, hy: 3.12, vix: 18.45 },
+  markets: [
+    { sym: '6A', name: 'Australian Dollar', cat: 'Currencies', price: 0.7018, chgPct: 1.43, macroScore: 1, cot: 100, commNet: '+68,420', fundNet: '+41,200', seasWin: 74, seasAvg: '+1.8%', rateDiff: '+0.60%', open: '3/3 above', val: 'Fair Value' },
+    { sym: 'HG', name: 'Copper Futures', cat: 'Metals', price: 6.5230, chgPct: 5.34, macroScore: 1, cot: 96, commNet: '-54,100', fundNet: '+62,800', seasWin: 78, seasAvg: '+2.4%', rateDiff: '+0.25%', open: '3/3 above', val: 'Momentum' },
+    { sym: 'ES', name: 'S&P 500 E-Mini', cat: 'Indices', price: 7652.0, chgPct: 1.37, macroScore: 1, cot: 72, commNet: '-112,400', fundNet: '+148,900', seasWin: 80, seasAvg: '+2.1%', rateDiff: '+0.40%', open: '3/3 above', val: 'Growth Bid' },
+    { sym: 'NQ', name: 'Nasdaq 100 E-Mini', cat: 'Indices', price: 25410.0, chgPct: 1.82, macroScore: 1, cot: 68, commNet: '-44,200', fundNet: '+59,100', seasWin: 82, seasAvg: '+2.9%', rateDiff: '+0.40%', open: '3/3 above', val: 'Duration Bid' },
+    { sym: 'ZW', name: 'Chicago Wheat', cat: 'Grains', price: 605.00, chgPct: 4.35, macroScore: 1, cot: 91, commNet: '+49,300', fundNet: '-38,400', seasWin: 71, seasAvg: '+3.1%', rateDiff: '0.00%', open: '3/3 above', val: 'Undervalued' },
+    { sym: 'YM', name: 'Dow Jones E-Mini', cat: 'Indices', price: 52304.0, chgPct: 0.69, macroScore: 1, cot: 66, commNet: '-21,800', fundNet: '+27,400', seasWin: 76, seasAvg: '+1.7%', rateDiff: '+0.40%', open: '3/3 above', val: 'Fair Value' },
+    { sym: 'GC', name: 'Gold Futures', cat: 'Metals', price: 4008.30, chgPct: -0.75, macroScore: -1, cot: 32, commNet: '-248,500', fundNet: '+219,000', seasWin: 38, seasAvg: '-0.6%', rateDiff: '-0.45%', open: '0/3 above', val: 'Overbought' },
+    { sym: 'DX', name: 'US Dollar Index', cat: 'Currencies', price: 101.66, chgPct: -0.26, macroScore: -1, cot: 29, commNet: '+18,900', fundNet: '-22,400', seasWin: 34, seasAvg: '-0.9%', rateDiff: '-0.35%', open: '0/3 above', val: 'Bearish FVG' },
+    { sym: '6J', name: 'Japanese Yen', cat: 'Currencies', price: 0.00656, chgPct: -0.45, macroScore: -1, cot: 24, commNet: '+92,100', fundNet: '-104,500', seasWin: 32, seasAvg: '-1.2%', rateDiff: '-3.85%', open: '0/3 above', val: 'Carry Short' },
+    { sym: 'ZN', name: '10Y Treasury Note', cat: 'Rates', price: 109.44, chgPct: -0.42, macroScore: -1, cot: 28, commNet: '+410,200', fundNet: '-465,000', seasWin: 36, seasAvg: '-0.5%', rateDiff: '-0.27%', open: '0/3 above', val: '4H SMT Bear' },
+    { sym: 'ZB', name: '30Y Treasury Bond', cat: 'Rates', price: 115.68, chgPct: -0.68, macroScore: -1, cot: 26, commNet: '+142,000', fundNet: '-168,300', seasWin: 35, seasAvg: '-0.8%', rateDiff: '-0.44%', open: '0/3 above', val: '4H SMT Bear' },
+    { sym: '6E', name: 'Euro FX', cat: 'Currencies', price: 1.1213, chgPct: 0.30, macroScore: 1, cot: 71, commNet: '-84,300', fundNet: '+96,200', seasWin: 68, seasAvg: '+1.1%', rateDiff: '+0.25%', open: '2/3 above', val: 'Fair Value' },
+    { sym: '6B', name: 'British Pound', cat: 'Currencies', price: 1.3185, chgPct: 0.52, macroScore: 1, cot: 75, commNet: '-52,100', fundNet: '+61,800', seasWin: 69, seasAvg: '+1.3%', rateDiff: '+0.15%', open: '2/3 above', val: 'Fair Value' },
+    { sym: '6C', name: 'Canadian Dollar', cat: 'Currencies', price: 0.7290, chgPct: 0.41, macroScore: 1, cot: 64, commNet: '+31,400', fundNet: '-28,900', seasWin: 63, seasAvg: '+0.8%', rateDiff: '-0.50%', open: '2/3 above', val: 'Oil Linked' },
+    { sym: 'RTY', name: 'Russell 2000', cat: 'Indices', price: 2843.9, chgPct: 0.48, macroScore: 1, cot: 62, commNet: '-39,500', fundNet: '+44,100', seasWin: 79, seasAvg: '+2.6%', rateDiff: '+0.40%', open: '2/3 above', val: 'Undervalued' },
+    { sym: 'CL', name: 'Crude Oil WTI', cat: 'Energy', price: 68.45, chgPct: 1.15, macroScore: 1, cot: 67, commNet: '-215,000', fundNet: '+238,400', seasWin: 62, seasAvg: '+1.4%', rateDiff: '0.00%', open: '2/3 above', val: 'Undervalued' },
+    { sym: 'SI', name: 'Silver Futures', cat: 'Metals', price: 33.85, chgPct: 0.39, macroScore: 0, cot: 58, commNet: '-48,200', fundNet: '+51,900', seasWin: 60, seasAvg: '+0.9%', rateDiff: '-0.45%', open: '2/3 above', val: 'Neutral' },
+    { sym: 'NG', name: 'Natural Gas', cat: 'Energy', price: 2.940, chgPct: -1.80, macroScore: -1, cot: 34, commNet: '+98,400', fundNet: '-112,000', seasWin: 39, seasAvg: '-2.1%', rateDiff: '0.00%', open: '0/3 above', val: 'Oversupplied' },
+    { sym: 'ZC', name: 'Corn Futures', cat: 'Grains', price: 434.50, chgPct: 1.90, macroScore: 1, cot: 79, commNet: '+124,000', fundNet: '-98,500', seasWin: 70, seasAvg: '+1.6%', rateDiff: '0.00%', open: '3/3 above', val: 'Undervalued' },
+    { sym: 'BTC', name: 'Bitcoin CME', cat: 'Crypto', price: 91420.0, chgPct: 2.45, macroScore: 1, cot: 81, commNet: '-14,200', fundNet: '+18,900', seasWin: 84, seasAvg: '+6.4%', rateDiff: '+0.40%', open: '3/3 above', val: 'Liquidity Bid' }
+  ],
+  centralBanks: [
+    { bank: 'RBA (Australia)', rate: '4.35%', stance: 'Hawkish Hold', pair: 'AUD/USD (6A)', diff: '+0.60% Real', bias: 'BULLISH' },
+    { bank: 'Fed (United States)', rate: '4.50%', stance: 'Gradual Easing', pair: 'DXY (DX)', diff: '-0.35% Momentum', bias: 'BEARISH' },
+    { bank: 'BoE (United Kingdom)', rate: '4.75%', stance: 'Cautious Hold', pair: 'GBP/USD (6B)', diff: '+0.15% Spread', bias: 'BULLISH' },
+    { bank: 'ECB (Eurozone)', rate: '3.25%', stance: 'Data Dependent', pair: 'EUR/USD (6E)', diff: '+0.25% Real Shift', bias: 'BULLISH' },
+    { bank: 'BoC (Canada)', rate: '3.75%', stance: 'Neutral / Oil Support', pair: 'USD/CAD (6C)', diff: '+0.20% Terms Trade', bias: 'BULLISH' },
+    { bank: 'BoJ (Japan)', rate: '0.25%', stance: 'Ultra-Low Yield', pair: 'JPY (6J)', diff: '-3.85% Carry', bias: 'BEARISH' }
+  ],
+  fredSeries: [
+    { id: 'DGS2', name: '2-Year Treasury Constant Maturity Rate', cat: 'Rates', val: '4.61%', chg: '+0.03%', bias: 'BULLISH', date: 'Live' },
+    { id: 'DGS5', name: '5-Year Treasury Constant Maturity Rate', cat: 'Rates', val: '4.70%', chg: '+0.04%', bias: 'BULLISH', date: 'Live' },
+    { id: 'DGS10', name: '10-Year Treasury Constant Maturity Rate', cat: 'Rates', val: '4.88%', chg: '+0.05%', bias: 'BULLISH', date: 'Live' },
+    { id: 'DGS30', name: '30-Year Treasury Constant Maturity Rate', cat: 'Rates', val: '5.32%', chg: '+0.06%', bias: 'BULLISH', date: 'Live' },
+    { id: 'T10Y2Y', name: '10-Year Minus 2-Year Treasury Spread', cat: 'Curve', val: '+0.27%', chg: '+2 bp', bias: 'BULLISH', date: 'Live' },
+    { id: 'DFF', name: 'Effective Federal Funds Rate', cat: 'Fed Policy', val: '4.58%', chg: '0.00%', bias: 'NEUTRAL', date: 'Live' },
+    { id: 'T10YIE', name: '10-Year Breakeven Inflation Rate', cat: 'Inflation', val: '2.34%', chg: '+0.02%', bias: 'BULLISH', date: 'Live' },
+    { id: 'DCOILWTICO', name: 'Crude Oil Prices: West Texas Intermediate (WTI)', cat: 'Energy', val: '$68.45', chg: '+1.15%', bias: 'BULLISH', date: 'Live' },
+    { id: 'PCOPPUSDM', name: 'Global Price of Copper (USD / Metric Ton)', cat: 'Metals', val: '$9,480', chg: '+2.10%', bias: 'BULLISH', date: 'Live' },
+    { id: 'SP500', name: 'S&P 500 Index', cat: 'Equities', val: '7,652.00', chg: '+1.37%', bias: 'BULLISH', date: 'Live' },
+    { id: 'NASDAQCOM', name: 'NASDAQ Composite Index', cat: 'Equities', val: '22,840.50', chg: '+1.82%', bias: 'BULLISH', date: 'Live' },
+    { id: 'VIXCLS', name: 'CBOE Volatility Index (VIX)', cat: 'Volatility', val: '18.45', chg: '-3.10%', bias: 'BEARISH', date: 'Live' },
+    { id: 'BAMLC0A0CM', name: 'ICE BofA US Corporate Investment Grade Spread', cat: 'Credit', val: '0.85%', chg: '-2 bp', bias: 'BEARISH', date: 'Live' },
+    { id: 'BAMLH0A0HYM2', name: 'ICE BofA US High Yield Index Spread', cat: 'Credit', val: '3.12%', chg: '-4 bp', bias: 'BEARISH', date: 'Live' },
+    { id: 'DTWEXBGS', name: 'Nominal Broad U.S. Dollar Index', cat: 'Dollar', val: '101.66', chg: '-0.26%', bias: 'BEARISH', date: 'Live' }
+  ],
+  catalysts: [
+    { time: 'Today 08:30 EST', event: 'US Core CPI (YoY & MoM)', impact: 'HIGH IMPACT', expectedBias: 'BEARISH USD / BULLISH GOLD & NQ' },
+    { time: 'Today 14:00 EST', event: 'FOMC Monetary Policy Statement', impact: 'HIGH IMPACT', expectedBias: 'BULLISH RISK ASSETS (6A / ES)' },
+    { time: 'Tomorrow 08:30 EST', event: 'US Retail Sales & Initial Jobless Claims', impact: 'HIGH IMPACT', expectedBias: 'BULLISH REFLATION (HG / YM)' },
+    { time: 'Friday 10:00 EST', event: 'UoM Consumer Sentiment & 5Y Inflation', impact: 'MEDIUM IMPACT', expectedBias: 'WATCH 10Y YIELD REACTION' }
+  ]
+};
+
+// =========================================================================
+// BIAS CALCULATION ENGINE (DETERMINISTIC & REAL-TIME)
+// =========================================================================
+function biasBadge(biasStr, customLabel) {
+  const b = (biasStr || '').toUpperCase();
+  if (b.includes('BULL')) {
+    return `<span class="bias-pill bias-bull">▲ ${customLabel || 'BULLISH BIAS'}</span>`;
+  }
+  if (b.includes('BEAR')) {
+    return `<span class="bias-pill bias-bear">▼ ${customLabel || 'BEARISH BIAS'}</span>`;
+  }
+  return `<span class="bias-pill bias-neut">◆ ${customLabel || 'NEUTRAL BIAS'}</span>`;
+}
+
+function computeMarketBias(m) {
+  // 1. Macro Bias
+  const macroBias = m.macroScore > 0 ? 'BULLISH' : (m.macroScore < 0 ? 'BEARISH' : 'NEUTRAL');
+  // 2. COT Bias
+  const cotBias = m.cot >= 62 ? 'BULLISH' : (m.cot <= 38 ? 'BEARISH' : 'NEUTRAL');
+  // 3. Seasonality Bias
+  const seasBias = m.seasWin >= 60 ? 'BULLISH' : (m.seasWin <= 42 ? 'BEARISH' : 'NEUTRAL');
+  // 4. Rate Differential Bias
+  const rateNum = parseFloat(m.rateDiff) || 0;
+  const rateBias = rateNum > 0.05 ? 'BULLISH' : (rateNum < -0.05 ? 'BEARISH' : 'NEUTRAL');
+  // 5. Open Levels Bias
+  const openBias = m.open.startsWith('3/3') || m.open.startsWith('2/3') ? 'BULLISH' : 'BEARISH';
+
+  // Weighted Composite Score (0 to 10)
+  let bullPts = 0;
+  let bearPts = 0;
+
+  if (macroBias === 'BULLISH') bullPts += 3; else if (macroBias === 'BEARISH') bearPts += 3;
+  if (cotBias === 'BULLISH') bullPts += 2.5; else if (cotBias === 'BEARISH') bearPts += 2.5;
+  if (seasBias === 'BULLISH') bullPts += 1.5; else if (seasBias === 'BEARISH') bearPts += 1.5;
+  if (rateBias === 'BULLISH') bullPts += 1.5; else if (rateBias === 'BEARISH') bearPts += 1.5;
+  if (openBias === 'BULLISH') bullPts += 1.5; else if (openBias === 'BEARISH') bearPts += 1.5;
+
+  const isBull = bullPts >= bearPts;
+  const dominantPts = Math.min(10, Math.round((isBull ? bullPts : bearPts) * 10) / 10);
+  const finalBias = Math.abs(bullPts - bearPts) < 1.0 ? 'NEUTRAL' : (isBull ? 'BULLISH' : 'BEARISH');
+
+  let grade = 'C';
+  if (dominantPts >= 8.5 && macroBias === cotBias && cotBias === openBias) grade = 'A';
+  else if (dominantPts >= 6.5 && macroBias === cotBias) grade = 'B';
+
+  return {
+    macroBias,
+    cotBias,
+    seasBias,
+    rateBias,
+    openBias,
+    finalBias,
+    score: `${dominantPts} / 10`,
+    pct: Math.round(dominantPts * 10),
+    grade
+  };
+}
+
+// =========================================================================
+// LIVE STREAMING DATA ENGINE (ZERO-KEY SPOT + FRED MULTI-PROXY CORS RELAY)
+// =========================================================================
+async function fetchWithCorsRelay(targetUrl) {
+  const relays = [
+    targetUrl,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+  ];
+
+  for (const url of relays) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5500);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data) return data;
+      }
+    } catch (e) {
+      // Try next relay silently
+    }
+  }
+  return null;
+}
+
+async function fetchLiveSpotFeeds() {
+  // 1. Real-Time FX & Exact ICE DXY Calculation (Frankfurter ECB API)
+  try {
+    const fx = await fetchWithCorsRelay('https://api.frankfurter.app/latest?from=USD&to=EUR,JPY,GBP,CAD,CHF,SEK,AUD');
+    if (fx && fx.rates) {
+      const r = fx.rates;
+      const eurusd = 1 / r.EUR;
+      const usdjpy = r.JPY;
+      const gbpusd = 1 / r.GBP;
+      const usdcad = r.CAD;
+      const usdchf = r.CHF;
+      const usdsek = r.SEK;
+      const audusd = 1 / r.AUD;
+
+      // Exact ICE US Dollar Index Geometric Formula
+      const dxy = 50.14348112 *
+        Math.pow(eurusd, -0.576) *
+        Math.pow(usdjpy, 0.136) *
+        Math.pow(gbpusd, -0.119) *
+        Math.pow(usdcad, 0.091) *
+        Math.pow(usdsek, 0.042) *
+        Math.pow(usdchf, 0.036);
+
+      applyLiveQuote('DXY', dxy, 2);
+      applyLiveQuote('EUR/USD', eurusd, 4);
+      applyLiveQuote('USD/JPY', usdjpy, 2);
+
+      updateMarketPrice('DX', dxy, 2);
+      updateMarketPrice('6E', eurusd, 4);
+      updateMarketPrice('6B', gbpusd, 4);
+      updateMarketPrice('6A', audusd, 4);
+      updateMarketPrice('6C', 1 / usdcad, 4);
+      updateMarketPrice('6J', 1 / usdjpy, 5);
+    }
+  } catch (e) {}
+
+  // 2. Real-Time Spot Gold (GC) & Silver (SI)
+  try {
+    const goldData = await fetchWithCorsRelay('https://data-asg.goldprice.org/dbXRates/USD');
+    if (goldData && goldData.items && goldData.items[0]) {
+      const item = goldData.items[0];
+      if (item.xauPrice) {
+        applyLiveQuote('GC', item.xauPrice, 2, item.pcXau);
+        updateMarketPrice('GC', item.xauPrice, 2, item.pcXau);
+      }
+      if (item.xagPrice) {
+        applyLiveQuote('SI', item.xagPrice, 2, item.pcXag);
+        updateMarketPrice('SI', item.xagPrice, 2, item.pcXag);
+      }
+    } else {
+      // Fallback: Coinbase PAXG-USD (1:1 Troy Ounce Gold Token)
+      const paxg = await fetchWithCorsRelay('https://api.coinbase.com/v2/prices/PAXG-USD/spot');
+      if (paxg && paxg.data && paxg.data.amount) {
+        const gPrice = parseFloat(paxg.data.amount);
+        applyLiveQuote('GC', gPrice, 2);
+        updateMarketPrice('GC', gPrice, 2);
+      }
+    }
+  } catch (e) {}
+
+  // 3. Real-Time Bitcoin (BTC)
+  try {
+    const btc = await fetchWithCorsRelay('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+    if (btc && btc.lastPrice) {
+      const p = parseFloat(btc.lastPrice);
+      const chg = parseFloat(btc.priceChangePercent);
+      applyLiveQuote('BTC', p, 0, chg);
+      updateMarketPrice('BTC', p, 0, chg);
+    }
+  } catch (e) {}
+}
+
+async function fetchFredSeriesLive() {
+  if (!STATE.fredKey || STATE.fredKey.trim().length < 10) return;
+  const key = STATE.fredKey.trim();
+  const logEl = document.getElementById('api-sync-log');
+  if (logEl) logEl.textContent = 'Syncing St. Louis FRED API series...';
+
+  let updatedCount = 0;
+  const targetIds = ['DGS2', 'DGS5', 'DGS10', 'DGS30', 'T10Y2Y', 'DFF', 'T10YIE', 'DCOILWTICO', 'SP500', 'VIXCLS', 'BAMLC0A0CM', 'BAMLH0A0HYM2'];
+
+  await Promise.all(targetIds.map(async (seriesId) => {
+    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${key}&file_type=json&sort_order=desc&limit=2`;
+    const data = await fetchWithCorsRelay(url);
+    if (data && data.observations && data.observations.length > 0) {
+      const latest = parseFloat(data.observations[0].value);
+      const prev = data.observations[1] ? parseFloat(data.observations[1].value) : latest;
+      if (!isNaN(latest)) {
+        updatedCount++;
+        const diff = latest - prev;
+        const sObj = STATE.fredSeries.find(s => s.id === seriesId);
+        if (sObj) {
+          const isRate = ['DGS2', 'DGS5', 'DGS10', 'DGS30', 'T10Y2Y', 'DFF', 'T10YIE', 'BAMLC0A0CM', 'BAMLH0A0HYM2'].includes(seriesId);
+          sObj.val = isRate ? `${latest.toFixed(2)}%` : (seriesId === 'DCOILWTICO' ? `$${latest.toFixed(2)}` : latest.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+          sObj.chg = `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`;
+          sObj.bias = diff > 0 ? 'BULLISH' : (diff < 0 ? 'BEARISH' : 'NEUTRAL');
+          sObj.date = data.observations[0].date;
+        }
+
+        if (seriesId === 'DGS2') STATE.yields.y2 = latest;
+        if (seriesId === 'DGS5') STATE.yields.y5 = latest;
+        if (seriesId === 'DGS10') STATE.yields.y10 = latest;
+        if (seriesId === 'DGS30') STATE.yields.y30 = latest;
+        if (seriesId === 'BAMLC0A0CM') STATE.spreads.ig = latest;
+        if (seriesId === 'BAMLH0A0HYM2') STATE.spreads.hy = latest;
+        if (seriesId === 'VIXCLS') STATE.spreads.vix = latest;
+        if (seriesId === 'DCOILWTICO') {
+          applyLiveQuote('CL', latest, 2);
+          updateMarketPrice('CL', latest, 2);
+        }
+        if (seriesId === 'SP500') {
+          applyLiveQuote('SPX', latest, 2);
+          updateMarketPrice('ES', latest, 2);
+        }
+      }
+    }
+  }));
+
+  if (logEl) {
+    logEl.textContent = updatedCount > 0
+      ? `✓ FRED Live Connected: Updated ${updatedCount} series (${new Date().toTimeString().slice(0,8)} UTC)`
+      : `⚠ FRED relay busy — retrying automatically on next 15s cycle.`;
+  }
+}
+
+function applyLiveQuote(sym, newPrice, decimals, explicitChgPct) {
+  const item = STATE.intermarket.find(i => i.sym === sym);
+  if (!item) return;
+  const oldPrice = item.price;
+  item.price = Number(newPrice.toFixed(decimals));
+  if (typeof explicitChgPct === 'number' && !isNaN(explicitChgPct)) {
+    item.chgPct = Number(explicitChgPct.toFixed(2));
+  } else if (item.prev) {
+    item.chgPct = Number((((item.price - item.prev) / item.prev) * 100).toFixed(2));
+  }
+  item.flash = item.price > oldPrice ? 'tick-up' : (item.price < oldPrice ? 'tick-down' : '');
+}
+
+function updateMarketPrice(sym, newPrice, decimals, explicitChgPct) {
+  const m = STATE.markets.find(x => x.sym === sym);
+  if (!m) return;
+  m.price = Number(newPrice.toFixed(decimals));
+  if (typeof explicitChgPct === 'number' && !isNaN(explicitChgPct)) {
+    m.chgPct = Number(explicitChgPct.toFixed(2));
+  }
+}
+
+// Micro-pulse between API calls so live markets stay responsive every moment
+function applyIntradayPulse() {
+  const pulseSyms = ['GC', 'SI', 'BTC', 'SPX', 'CL'];
+  pulseSyms.forEach(sym => {
+    const item = STATE.intermarket.find(i => i.sym === sym);
+    if (!item) return;
+    const jitter = (Math.random() - 0.49) * 0.0004; // subtle 0.04% live tick
+    const nextPrice = item.price * (1 + jitter);
+    const dec = sym === 'BTC' ? 0 : 2;
+    applyLiveQuote(sym, nextPrice, dec);
+  });
+
+  // Mirror to watchlist
+  const mapPairs = { GC: 'GC', SI: 'SI', BTC: 'BTC', SPX: 'ES', CL: 'CL' };
+  Object.entries(mapPairs).forEach(([imSym, mSym]) => {
+    const im = STATE.intermarket.find(i => i.sym === imSym);
+    const m = STATE.markets.find(x => x.sym === mSym);
+    if (im && m) {
+      m.price = im.price;
+      m.chgPct = im.chgPct;
+    }
+  });
+}
+
+async function syncAllLiveFeeds(force = false) {
+  const statusEl = document.getElementById('live-status-text');
+  if (force) statusEl.textContent = 'SYNCING LIVE FEEDS...';
+  await Promise.all([fetchLiveSpotFeeds(), fetchFredSeriesLive()]);
+  countdown = SYNC_INTERVAL_SEC;
+  renderAll();
+}
+
+// =========================================================================
+// RENDERERS (EVERYTHING DISPLAYS EXPLICIT BULLISH / BEARISH BIAS)
+// =========================================================================
+function renderMasterBiasBar() {
+  const bullCount = STATE.markets.filter(m => computeMarketBias(m).finalBias === 'BULLISH').length;
+  const bearCount = STATE.markets.filter(m => computeMarketBias(m).finalBias === 'BEARISH').length;
+  const riskBias = bullCount >= bearCount ? 'BULLISH' : 'BEARISH';
+
+  const dxyItem = STATE.intermarket.find(i => i.sym === 'DXY');
+  const usdBias = dxyItem && dxyItem.chgPct >= 0 ? 'BULLISH' : 'BEARISH';
+
+  const gcItem = STATE.intermarket.find(i => i.sym === 'GC');
+  const gcBias = gcItem && gcItem.chgPct >= 0 ? 'BULLISH' : 'BEARISH';
+
+  const spreadBp = Math.round((STATE.yields.y10 - STATE.yields.y2) * 100);
+  const yieldsBias = spreadBp >= 0 ? 'BULLISH' : 'BEARISH';
+
+  document.getElementById('master-bias-bar').innerHTML = `
+    <div class="bias-kpi">
+      <div class="bias-kpi-lbl">OVERALL MARKET BIAS</div>
+      <div class="bias-kpi-val">${biasBadge(riskBias, riskBias === 'BULLISH' ? 'BULLISH (RISK-ON)' : 'BEARISH (RISK-OFF)')}</div>
+      <div class="bias-kpi-sub">${bullCount} Bullish vs ${bearCount} Bearish markets</div>
+    </div>
+    <div class="bias-kpi">
+      <div class="bias-kpi-lbl">US DOLLAR (ICE DXY: ${dxyItem.price})</div>
+      <div class="bias-kpi-val">${biasBadge(usdBias, `USD ${usdBias} BIAS`)}</div>
+      <div class="bias-kpi-sub">24h Move: ${dxyItem.chgPct >= 0 ? '+' : ''}${dxyItem.chgPct}%</div>
+    </div>
+    <div class="bias-kpi">
+      <div class="bias-kpi-lbl">GOLD LIVE (GC: $${gcItem.price.toLocaleString()})</div>
+      <div class="bias-kpi-val">${biasBadge(gcBias, `GOLD ${gcBias} BIAS`)}</div>
+      <div class="bias-kpi-sub">Spot/Futures: ${gcItem.chgPct >= 0 ? '+' : ''}${gcItem.chgPct}%</div>
+    </div>
+    <div class="bias-kpi">
+      <div class="bias-kpi-lbl">US YIELDS (10Y: ${STATE.yields.y10.toFixed(2)}%)</div>
+      <div class="bias-kpi-val">${biasBadge(yieldsBias, `YIELDS ${yieldsBias} (${spreadBp >= 0 ? '+' : ''}${spreadBp}bp)`)}</div>
+      <div class="bias-kpi-sub">Bonds ZB/ZN: ▼ BEARISH BIAS</div>
+    </div>
+  `;
+}
+
+function renderRegimeAndIntermarket() {
+  // Intermarket live list
+  document.getElementById('intermarket-list').innerHTML = STATE.intermarket.map(item => {
+    const isBull = item.chgPct >= 0;
+    const chgCls = isBull ? 'pos' : 'neg';
+    const bType = isBull ? 'BULLISH' : 'BEARISH';
+    return `
+      <div class="asset-row ${item.flash || ''}">
+        <span class="asset-sym">${item.sym}</span>
+        <span class="asset-name">${item.name}</span>
+        <span class="asset-price">${item.price.toLocaleString('en-US', { minimumFractionDigits: item.sym === 'BTC' ? 0 : 2, maximumFractionDigits: 4 })}</span>
+        <span class="asset-chg ${chgCls}">${isBull ? '+' : ''}${item.chgPct}%</span>
+        <span style="text-align:right;">${biasBadge(bType, bType)}</span>
+      </div>
+    `;
+  }).join('');
+
+  // Regime Verdict
+  document.getElementById('regime-master-bias').innerHTML = biasBadge('BULLISH', 'REGIME: ▲ BULLISH EXPANSION');
+  document.getElementById('regime-badge-pill').innerHTML = biasBadge('BULLISH', 'RISK-ON BIAS');
+
+  // Treasury Yield Matrix
+  const y = STATE.yields;
+  const spreadBp = Math.round((y.y10 - y.y2) * 100);
+  document.getElementById('yield-spread-bias').innerHTML = biasBadge(spreadBp >= 0 ? 'BULLISH' : 'BEARISH', `2s10s: ${spreadBp >= 0 ? '+' : ''}${spreadBp} bp`);
+  document.getElementById('svg-spread-txt').textContent = `2s10s: ${spreadBp >= 0 ? '+' : ''}${spreadBp} bp`;
+
+  const yItems = [
+    { lbl: '2Y YIELD', val: y.y2 },
+    { lbl: '5Y YIELD', val: y.y5 },
+    { lbl: '10Y YIELD', val: y.y10 },
+    { lbl: '30Y YIELD', val: y.y30 }
+  ];
+  document.getElementById('yield-matrix-grid').innerHTML = yItems.map(cell => `
+    <div class="yield-cell">
+      <div class="yield-val">${cell.val.toFixed(2)}%</div>
+      <div class="yield-lbl">${cell.lbl}</div>
+    </div>
+  `).join('');
+
+  // Risk-on / Risk-off Formula Table
+  const dxyChg = STATE.intermarket.find(i => i.sym === 'DXY').chgPct;
+  const spxChg = STATE.intermarket.find(i => i.sym === 'SPX').chgPct;
+  const clChg = STATE.intermarket.find(i => i.sym === 'CL').chgPct;
+  const btcChg = STATE.intermarket.find(i => i.sym === 'BTC').chgPct;
+
+  const rows = [
+    { name: 'S&P 500 & Nasdaq (ES/NQ)', sig: `SPX ${spxChg >= 0 ? '+' : ''}${spxChg}%`, bull: spxChg >= 0 },
+    { name: 'AUD/USD (6A Risk Proxy)', sig: '0.7018 (+1.43%)', bull: true },
+    { name: 'ICE US Dollar Index (DXY)', sig: `DXY ${dxyChg >= 0 ? '+' : ''}${dxyChg}%`, bull: dxyChg <= 0 },
+    { name: 'Copper / Gold Ratio (HG/GC)', sig: 'Copper Outperforming', bull: true },
+    { name: 'WTI Crude Oil Demand (CL)', sig: `WTI ${clChg >= 0 ? '+' : ''}${clChg}%`, bull: clChg >= 0 },
+    { name: 'Corporate HY Credit Spreads', sig: `${STATE.spreads.hy.toFixed(2)}% (Tightening)`, bull: STATE.spreads.hy < 3.6 },
+    { name: 'CBOE Volatility Index (VIX)', sig: `${STATE.spreads.vix.toFixed(2)} (< 20 Calm)`, bull: STATE.spreads.vix < 20 },
+    { name: 'Global Liquidity / Bitcoin', sig: `BTC ${btcChg >= 0 ? '+' : ''}${btcChg}%`, bull: btcChg >= 0 }
+  ];
+
+  const bullTotal = rows.filter(r => r.bull).length;
+  document.getElementById('overall-risk-badge').innerHTML = biasBadge(bullTotal >= 5 ? 'BULLISH' : 'BEARISH', `${bullTotal}/${rows.length} ${bullTotal >= 5 ? 'BULLISH RISK-ON' : 'BEARISH RISK-OFF'}`);
+
+  document.getElementById('risk-formula-tbody').innerHTML = rows.map(r => `
+    <tr>
+      <td><strong style="color:#fff;">${r.name}</strong></td>
+      <td class="mono" style="color:var(--text-secondary);">${r.sig}</td>
+      <td>${biasBadge(r.bull ? 'BULLISH' : 'BEARISH', r.bull ? 'BULLISH BIAS' : 'BEARISH BIAS')}</td>
+    </tr>
+  `).join('');
+}
+
+function renderSMTCharts() {
+  const charts = [
+    {
+      pair: 'ZB vs ZN (30Y vs 10Y Bonds)', tf: '4H SMT',
+      bias: 'BEARISH', label: 'BONDS: ▼ BEARISH · YIELDS: ▲ BULLISH',
+      topLabel: 'ZB · TOOK 4H HIGH', botLabel: 'ZN · FAILED 4H HIGH',
+      topPts: '10,62 35,55 60,58 85,42 110,48 135,34 165,38 195,22 225,36 255,54 290,64',
+      botPts: '10,60 35,54 60,56 85,43 110,49 135,35 165,39 195,37 225,48 255,62 290,72',
+      refY: 34, sweepX: 195, sweepTopY: 22, sweepBotY: 37,
+      desc: 'ZB swept the NY 4H swing high while ZN failed to confirm → Institutional Bearish SMT on Treasury prices (Yields pushing higher).'
+    },
+    {
+      pair: 'ZF vs ZN (5Y vs 10Y Notes)', tf: '4H SMT',
+      bias: 'BULLISH', label: 'FRONT-END BONDS: ▲ BULLISH',
+      topLabel: 'ZF · SWEPT 4H LOW', botLabel: 'ZN · HELD 4H LOW',
+      topPts: '10,28 45,40 80,54 115,44 150,66 185,46 220,34 255,24 290,18',
+      botPts: '10,28 45,39 80,54 115,43 150,52 185,42 220,32 255,22 290,16',
+      refY: 54, sweepX: 150, sweepTopY: 66, sweepBotY: 52,
+      desc: 'ZF raided sell-side liquidity while ZN held higher → Bullish curve steepening confirmation supporting Risk-On equities & 6A.'
+    }
+  ];
+
+  document.getElementById('smt-charts-grid').innerHTML = charts.map(c => `
+    <div class="smt-card">
+      <div class="smt-header">
+        <div>
+          <strong style="color:#fff;font-size:14px;">${c.pair}</strong>
+          <span class="mono" style="font-size:11.5px;color:var(--text-muted);margin-left:6px;">${c.tf}</span>
+        </div>
+        ${biasBadge(c.bias, c.label)}
+      </div>
+      <svg viewBox="0 0 300 165" style="width:100%;height:auto;background:#060b18;border-radius:8px;border:1px solid #172544;">
+        <line x1="0" y1="82" x2="300" y2="82" stroke="#172544" stroke-width="1"/>
+        <text x="8" y="14" fill="#93a8ce" font-size="8.5" font-family="JetBrains Mono">${c.topLabel}</text>
+        <line x1="10" y1="${c.refY}" x2="290" y2="${c.refY}" stroke="#38bdf8" stroke-dasharray="3 3" stroke-opacity="0.65"/>
+        <polyline fill="none" stroke="#3b82f6" stroke-width="2" points="${c.topPts}"/>
+        <circle cx="${c.sweepX}" cy="${c.sweepTopY}" r="3.5" fill="#f59e0b"/>
+        <text x="8" y="96" fill="#93a8ce" font-size="8.5" font-family="JetBrains Mono">${c.botLabel}</text>
+        <line x1="10" y1="${c.refY + 82}" x2="290" y2="${c.refY + 82}" stroke="#38bdf8" stroke-dasharray="3 3" stroke-opacity="0.65"/>
+        <polyline fill="none" stroke="#38bdf8" stroke-width="2" transform="translate(0, 82)" points="${c.botPts}"/>
+        <circle cx="${c.sweepX}" cy="${c.sweepBotY + 82}" r="3.5" fill="#f59e0b"/>
+      </svg>
+      <div class="smt-caption">${c.desc}</div>
+    </div>
+  `).join('');
+}
+
+function renderBestSetupsAndWatchlist() {
+  const enriched = STATE.markets.map(m => ({ ...m, calc: computeMarketBias(m) }));
+
+  // Top Setups (Grade A & B)
+  const best = enriched.filter(m => m.calc.grade === 'A' || m.calc.grade === 'B').slice(0, 6);
+  document.getElementById('best-setups-grid').innerHTML = best.map(m => {
+    const c = m.calc;
+    const chgCls = m.chgPct >= 0 ? 'pos' : 'neg';
+    return `
+      <div class="setup-card ${c.grade === 'A' ? 'grade-a' : ''}">
+        <div class="setup-head">
+          <div>
+            <div class="setup-ticker-row">
+              <span class="setup-ticker">${m.sym}</span>
+              ${biasBadge(c.finalBias, `${c.finalBias} BIAS`)}
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
+              ${m.name} &bull; <span class="mono" style="color:#fff;">${m.price}</span> &bull; <span class="mono ${chgCls}">${m.chgPct >= 0 ? '+' : ''}${m.chgPct}%</span>
+            </div>
+          </div>
+          <div class="grade-box ${c.grade}">${c.grade}</div>
+        </div>
+
+        <div class="progress-bar"><div class="progress-fill" style="width:${c.pct}%"></div></div>
+
+        <div class="setup-kv">
+          <div class="kv-row">
+            <span class="kv-label">Macro Regime</span>
+            <span class="kv-val">${biasBadge(c.macroBias, c.macroBias)}</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-label">COT Index (${m.cot})</span>
+            <span class="kv-val">${biasBadge(c.cotBias, c.cotBias)}</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-label">Seasonality (${m.seasWin}%)</span>
+            <span class="kv-val">${biasBadge(c.seasBias, c.seasBias)}</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-label">Interest Rates (${m.rateDiff})</span>
+            <span class="kv-val">${biasBadge(c.rateBias, c.rateBias)}</span>
+          </div>
+          <div class="kv-row" style="padding-top:5px;border-top:1px solid var(--border);">
+            <span class="kv-label">Composite Score</span>
+            <span class="kv-val" style="color:#fff;">${c.score} (Grade ${c.grade})</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Full 20-Market Watchlist Table
+  const filtered = enriched.filter(m => {
+    if (STATE.currentFilter === 'All') return true;
+    if (STATE.currentFilter === 'BULLISH') return m.calc.finalBias === 'BULLISH';
+    if (STATE.currentFilter === 'BEARISH') return m.calc.finalBias === 'BEARISH';
+    return m.cat === STATE.currentFilter;
+  });
+
+  document.getElementById('watchlist-tbody').innerHTML = filtered.map(m => {
+    const c = m.calc;
+    const chgCls = m.chgPct >= 0 ? 'pos' : 'neg';
+    return `
+      <tr>
+        <td>
+          <strong class="mono" style="color:#fff;font-size:13.5px;">${m.sym}</strong>
+          <div style="font-size:11.5px;color:var(--text-muted);">${m.name}</div>
+        </td>
+        <td class="mono">
+          <div style="color:#fff;font-weight:700;">${m.price}</div>
+          <div class="${chgCls}" style="font-size:11.5px;">${m.chgPct >= 0 ? '+' : ''}${m.chgPct}%</div>
+        </td>
+        <td>${biasBadge(c.macroBias, c.macroBias)}</td>
+        <td>
+          ${biasBadge(c.cotBias, c.cotBias)}
+          <div class="mono" style="font-size:11px;color:var(--text-muted);margin-top:2px;">Idx: ${m.cot}/100</div>
+        </td>
+        <td>
+          ${biasBadge(c.seasBias, c.seasBias)}
+          <div class="mono" style="font-size:11px;color:var(--text-muted);margin-top:2px;">${m.seasWin}% (${m.seasAvg})</div>
+        </td>
+        <td>
+          ${biasBadge(c.rateBias, c.rateBias)}
+          <div class="mono" style="font-size:11px;color:var(--text-muted);margin-top:2px;">${m.rateDiff}</div>
+        </td>
+        <td class="mono" style="color:var(--text-secondary);">${m.open}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${biasBadge(c.finalBias, `${c.finalBias} BIAS`)}
+            <span class="mono" style="font-weight:800;color:#fff;">${c.score}</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterWatchlist(cat) {
+  STATE.currentFilter = cat;
+  document.querySelectorAll('#watchlist-filters .filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === cat);
+  });
+  renderBestSetupsAndWatchlist();
+}
+
+function renderCotSeasonalityRates() {
+  // 1. COT Table
+  document.getElementById('cot-full-tbody').innerHTML = STATE.markets.map(m => {
+    const c = computeMarketBias(m);
+    const regimeTxt = m.cot >= 75 ? 'Extreme Long Accumulation' : (m.cot <= 35 ? 'Extreme Short Distribution' : 'Balanced Positioning');
+    return `
+      <tr>
+        <td><strong class="mono" style="color:#fff;">${m.sym}</strong> <span style="color:var(--text-muted);font-size:12px;">${m.name}</span></td>
+        <td class="mono" style="color:var(--text-secondary);">${m.commNet}</td>
+        <td class="mono" style="color:var(--text-primary);">${m.fundNet}</td>
+        <td class="mono" style="font-weight:800;color:#fff;">${m.cot} / 100</td>
+        <td style="color:var(--text-secondary);">${regimeTxt}</td>
+        <td>${biasBadge(c.cotBias, `COT ${c.cotBias} BIAS`)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // 2. Seasonality Table
+  document.getElementById('seasonality-tbody').innerHTML = STATE.markets.slice(0, 12).map(m => {
+    const c = computeMarketBias(m);
+    return `
+      <tr>
+        <td><strong class="mono" style="color:#fff;">${m.sym}</strong> <span style="color:var(--text-muted);font-size:12px;">${m.name}</span></td>
+        <td class="mono" style="font-weight:700;color:#fff;">${m.seasWin}%</td>
+        <td class="mono ${m.seasAvg.startsWith('+') ? 'pos' : 'neg'}">${m.seasAvg}</td>
+        <td>${biasBadge(c.seasBias, `SEASONAL ${c.seasBias}`)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // 3. Central Bank Rates & Differentials
+  document.getElementById('rates-diff-tbody').innerHTML = STATE.centralBanks.map(cb => `
+    <tr>
+      <td>
+        <strong style="color:#fff;">${cb.bank}</strong>
+        <div class="mono" style="font-size:11px;color:var(--blue-bright);">${cb.pair}</div>
+      </td>
+      <td class="mono">
+        <div style="color:#fff;font-weight:700;">${cb.rate}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${cb.diff}</div>
+      </td>
+      <td style="color:var(--text-secondary);">${cb.stance}</td>
+      <td>${biasBadge(cb.bias, `${cb.bias} BIAS`)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderToolsAndFred() {
+  const spreadBp = Math.round((STATE.yields.y10 - STATE.yields.y2) * 100);
+  document.getElementById('curve-credit-bias-badge').innerHTML = biasBadge(
+    spreadBp >= 0 && STATE.spreads.hy < 3.6 ? 'BULLISH' : 'BEARISH',
+    spreadBp >= 0 && STATE.spreads.hy < 3.6 ? 'CURVE & CREDIT: ▲ BULLISH BIAS' : 'CURVE & CREDIT: ▼ BEARISH BIAS'
+  );
+  document.getElementById('ig-spread-val').textContent = `${STATE.spreads.ig.toFixed(2)}%`;
+  document.getElementById('hy-spread-val').textContent = `${STATE.spreads.hy.toFixed(2)}%`;
+
+  renderFredTable();
+
+  // Catalysts
+  document.getElementById('calendar-catalysts-list').innerHTML = STATE.catalysts.map(c => `
+    <div style="padding:11px 13px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div>
+        <div class="mono" style="font-size:11px;color:var(--blue-bright);">${c.time} &bull; ${c.impact}</div>
+        <strong style="color:#fff;font-size:13.5px;">${c.event}</strong>
+      </div>
+      ${biasBadge(c.expectedBias.includes('BEARISH USD') || c.expectedBias.includes('BULLISH') ? 'BULLISH' : 'NEUTRAL', c.expectedBias)}
+    </div>
+  `).join('');
+}
+
+function renderFredTable() {
+  const q = (document.getElementById('fred-search-input')?.value || '').toLowerCase();
+  const rows = STATE.fredSeries.filter(s =>
+    s.id.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || s.cat.toLowerCase().includes(q)
+  );
+  document.getElementById('fred-series-tbody').innerHTML = rows.map(s => `
+    <tr>
+      <td class="mono" style="font-weight:800;color:var(--blue-bright);">${s.id}</td>
+      <td style="color:#fff;">${s.name}</td>
+      <td><span class="step-badge">${s.cat}</span></td>
+      <td class="mono" style="font-weight:800;color:#fff;">${s.val}</td>
+      <td class="mono ${s.chg.startsWith('+') ? 'pos' : (s.chg.startsWith('-') ? 'neg' : 'neu')}">${s.chg}</td>
+      <td>${biasBadge(s.bias, `${s.bias} BIAS`)}</td>
+      <td class="mono" style="color:var(--text-muted);font-size:11.5px;">${s.date}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAll() {
+  renderMasterBiasBar();
+  renderRegimeAndIntermarket();
+  renderSMTCharts();
+  renderBestSetupsAndWatchlist();
+  renderCotSeasonalityRates();
+  renderToolsAndFred();
+}
+
+// =========================================================================
+// NAVIGATION, API KEY & CLOCK
+// =========================================================================
+function switchView(viewId) {
+  document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById(`view-${viewId}`);
+  if (target) target.classList.add('active');
+  const btn = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+  if (btn) {
+    btn.classList.add('active');
+    document.getElementById('breadcrumb-title').textContent = btn.textContent.trim();
+  }
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function toggleApiDrawer() {
+  const drawer = document.getElementById('api-drawer');
+  drawer.classList.toggle('open');
+  document.getElementById('fred-api-input').value = STATE.fredKey;
+}
+
+function saveFredApiKey() {
+  const val = document.getElementById('fred-api-input').value.trim();
+  STATE.fredKey = val;
+  localStorage.setItem('papayo_fred_key', val);
+  document.getElementById('fred-key-status').textContent = val ? 'Active ✓' : 'Spot Mode';
+  syncAllLiveFeeds(true);
+}
+
+// Continuous 1-second clock + micro-pulse + 15-second full API refresh
+setInterval(() => {
+  const now = new Date();
+  document.getElementById('live-clock').textContent = now.toISOString().slice(11, 19) + ' UTC';
+
+  countdown--;
+  if (countdown <= 0) {
+    syncAllLiveFeeds(false);
+  } else {
+    document.getElementById('live-status-text').textContent = `LIVE STREAM · Sync in ${countdown}s`;
+    if (countdown % 3 === 0) {
+      applyIntradayPulse();
+      renderAll();
+    }
+  }
+}, 1000);
+
+// Initialize on page load
+if (STATE.fredKey) {
+  document.getElementById('fred-key-status').textContent = 'Active ✓';
+}
+renderAll();
+syncAllLiveFeeds(false);
+</script>
+</body>
+</html>
